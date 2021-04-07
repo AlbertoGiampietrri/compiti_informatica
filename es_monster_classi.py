@@ -1,78 +1,107 @@
-class Entity:
+import os
+
+class Entity: 
     def __init__(self, x, y, field):
         self.x = x
         self.y = y
         self.field = field
         self.field.entities.append(self)
 
-    def move(self, direction, field):
-        if direction == "up":
-            self.y -= 1
-        elif direction == "down":
-            self.y += 1
-        elif direction == "left":
-            self.x -= 1
-        elif direction == "right":
-            self.x += 1
+    def move(self, direction):
+        futureX = self.x
+        futureY = self.y
 
-        if self.y > field.h:
-            self.y -= 1
-            print("La creatura non può andare oltre al limite del campo")
-        elif self.y < 0:
-            self.y += 1
-            print("La creatura non può andare oltre al limite del campo")
-        if self.x > field.w:
-            self.x -= 1
-            print("La creatura non può andare oltre al limite del campo")
-        elif self.x < 0:
-            self.x += 1
-            print("La creatura non può andare oltre al limite del campo")
-            
+        if direction == "up" and self.y > 0:
+            futureY -= 1
+        elif direction == "down" and self.y < self.field.h - 1:
+            futureY += 1
+        elif direction == "left" and self.x > 0:
+            futureX -= 1
+        elif direction == "right" and self.x < self.field.w - 1:
+            futureX += 1
 
-class Creatures(Entity):
-    def __init__(self, x, y, name, damage, hp, level, field):
+        e = self.field.get_entity_at_coords(futureX, futureY)
+
+        if e == None:
+            self.x = futureX
+            self.y = futureY
+        else:
+            self.collide(e)
+
+    def collide(self, entity):
+        if self != entity:
+            self.attack(entity)
+
+class Monster(Entity):
+    def __init__(self, x, y, name, damage, field):
         super().__init__(x, y, field)
         self.name = name
-        self.damage = damage + damage * (level/10)
-        self.hp = hp + hp * (level/10)
-        self.level = level
+        self.hp = 10
+        self.damage = damage
 
     def info(self):
-        print("sono", self.name, "damage:", self.damage, "hp:", self.hp, "level:", self.level, "e mi trovo a", self.x, ",", self.y)
+        print("sono", self.name, "hp:", self.hp, "/10", "e mi trovo a", self.x, ",", self.y)
+    def info2(self):
+        print("L'avversario", self.name, "hp:", self.hp, "/10")
 
     def attack(self, enemy):
         if self.hp <= 0:
             print(self.name, "prova ad attaccare da morto con scarsi risultati")
-        else:
+        else: 
             print(self.name, "attacca", enemy.name)
-
-        if (enemy.hp <= 0):
-            print(enemy.name, "e' morto")
-        else:
-            enemy.hp -= self.damage
+            self.info()
+            enemy.info2()
+            if (enemy.hp <= 0):
+                print(enemy.name, "e' morto")
+                self.field.entities.remove(enemy)
+            else:
+                enemy.hp -= self.damage
+        input()
 
 class Field:
     def __init__(self):
-        self.w = 10
-        self.h = 10
+        self.w = 5
+        self.h = 5
         self.entities = []
+
+    def get_entity_at_coords(self, x, y):
+        for e in self.entities:
+            if e.x == x and e.y == y:
+                return e
+
+        return None
 
     def draw(self):
         for y in range(self.h):
             for x in range(self.w):
-                for e in self.entities: 
+                for e in self.entities:
                     if x == e.x and y == e.y:
-                        if x <= self.w and y <= self.h:
-                            print("[x]", end = "")
-                            break
+                        print("[x]", end = "")
+                        break    
                 else:
                     print("[ ]", end = "")
             print()
-    
 
 field = Field()
-c1 = Creatures(3, 4, "Pino", 1000, 30, 1, field)
-c2 = Creatures(5, 6, "Abete", 1500, 10, 2, field)
-c3 = Creatures(7, 8, "Betulla", 300, 20, 3, field)
+m1 = Monster(2, 2, "Pino", 10, field)
+m2 = Monster(1, 1, "Gino", 10, field)
+p = Monster(0, 0, "Player", 4, field)
 
-field.draw()
+def clear_screen():
+    if os.name == "nt":
+        os.system("cls")
+    else:
+        os.system("clear")
+
+clear_screen()
+while True:
+    field.draw()
+
+    command = input("input: ").lower()
+    clear_screen()
+
+    if command == "q": break
+    elif command == "w": p.move("up")
+    elif command == "a": p.move("left")
+    elif command == "s": p.move("down")
+    elif command == "d": p.move("right")
